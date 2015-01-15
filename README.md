@@ -7,3 +7,5 @@ You can have discussion and ask questions in Gitter chat. Please join the chat r
 <br>
 <br>
 The actual challenge will be released in this repository on 16th of January.
+
+![](http://media.giphy.com/media/Is8y3IXz8Fflm/giphy.gif)
