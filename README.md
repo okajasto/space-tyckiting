@@ -135,7 +135,7 @@ Example of *events object*:
             "event": "hit",
             "data": {
                 "hp": -1,
-                "id": 0
+                "id": 0,
                 "name": "T-1",
                 "team": "Solid"
             }
@@ -153,7 +153,7 @@ Example of *events object*:
                     {
                         "id": 1,
                         "name": "Terminator",
-                        "team": "Havoc"
+                        "team": "Havoc",
                         "x": 0,
                         "y": 1
                     }
@@ -163,14 +163,13 @@ Example of *events object*:
         {
             "event": "message",
             "data": {
-                    "messageId": 78,
-                    "source": {
-                        "id": 1,
-                        "name": "Terminator",
-                        "team": "Havoc",
-                    },
-                    "message": "Hasta la vista, baby"
-                }
+                "messageId": 78,
+                "source": {
+                    "id": 1,
+                    "name": "Terminator",
+                    "team": "Havoc",
+                },
+                "message": "Hasta la vista, baby"
             }
         }
     ]
