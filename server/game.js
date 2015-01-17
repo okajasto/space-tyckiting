@@ -1,6 +1,6 @@
 var Rules = require('./rules.js');
 var Messages = require('./messages.js');
-var ActionLog = require('./actionlog.js');
+var ActionLog = require('./actionLog.js');
 var _ = require('lodash');
 
 function Game(config) {
