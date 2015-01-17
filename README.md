@@ -59,7 +59,13 @@ There are two example bots to test your solution:
 AI is sometimes referred as team in the specs. **AI is the same as a team**.
 Exploiting bugs or unintended holes in the framework is prohibited.
 
-This is a grid-based game and the map represents the surface of a planet. The game grid is 28 x 28. Two teams will play against each other, and each team has 3 bots. Each of the three bots have 10 health points at the beginning of the game. The whole team is considered alive as long as they have 1 or more bots alive.
+This is a grid-based game and the map represents the surface of a planet.
+The game grid is 28 x 28. Two teams will play against each other, and each
+team has 3 bots. Each of the three bots have 10 health points at the beginning
+of the game. The whole team is considered alive as long as they have 1 or more
+bots alive. In the beginning of the game, each bot will be placed in a
+random position on the grid. Note that the bots can spawn on the same position or
+so that they can see each other in the first received *events*.
 
 
 ![](docs/game-grid.png)
@@ -74,7 +80,7 @@ The game is turn-based, and on each turn, teams send their next actions to the s
 
     ![](docs/blast-area.png)
 
-* **Radar** an area centered at point *(x, y)*. Radaring reveals players as far as 3 steps away from the center. In other words, radar covers a 7 x 7 grid. You will be norified if you were detected.
+* **Radar** an area centered at point *(x, y)*. Radaring reveals players as far as 3 steps away from the center. In other words, radar covers a 7 x 7 grid. You will be notified if you were detected.
 
 * **Message** a text message. This is broadcasted to all other teams. Message is not considered an action. You can for example send a message **and** move with a bot in the same turn.
 
@@ -90,6 +96,8 @@ There will be two or more bots in the arena. Two or more bots can move to the sa
 ### Game flow
 
 After each turn has been played, teams receive `events` which describes what happened in the last round.
+The events passed to `makeDecision` function contains combined events of each bot in the team.
+For example: if even just one of the bots detect enemy bot, the detection will be in events.
 
 **All possible events**
 
@@ -172,6 +180,8 @@ Example of *events object*:
 **Detailed game flow**
 
 The framework implements the details of game flow under the hood. This is just "good to know" information.
+The AI receives all needed information as parameters in `makeDecisions`, it doesn't need to
+care about the details of join and start.
 
 0. Each bot connects to server.
 1. Each bot sends `join`

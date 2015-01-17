@@ -2,7 +2,7 @@
 
 Clients and servers communicate WebSockets (http://socket.io/).
 
-Client send it's action to ´action´. Action message contains keys `type` and `data`. The only exception to this is the `skip` message, where `data` is optional.
+Client send it's action to ´action´. Action message contains keys `type` and `data`.
 
 ```json
 {
