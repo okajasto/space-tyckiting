@@ -86,12 +86,7 @@ function Game(config) {
             });
             started = true;
             setTimeout(function () {
-                players.forEach(function(player) {
-                    if (player.socket) {
-                        player.socket.emit("events", [Messages.getRoundStartMessage(0)]);
-                    }
-                });
-                gameLoop(teams, players, 1, {teams: ActionLog.getStartData(teams, players), turns: []});
+                gameLoop(teams, players, 0, {teams: ActionLog.getStartData(teams, players), turns: []});
             }, 200);
         };
 
@@ -102,6 +97,12 @@ function Game(config) {
                 return player.hp > 0 && player.active;
             });
 
+            if (counter === 0) {
+                // The round 0 is start round. No actions should be performed before it.
+                activePlayers.forEach(function(player) {
+                    player.action = null;
+                });
+            }
             statistics.turns.push(ActionLog.getTurnActions(activePlayers));
 
             // MOVE
