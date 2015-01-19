@@ -32,6 +32,18 @@ function _mapAction(bot, action) {
     }
 }
 
+function _mapMoveActions(players) {
+    return _.reduce(players, function(result, player) {
+        if (player.action && player.action.type === "move") {
+            result.push(_mapAction(player, {
+                x: player.x,
+                y: player.y
+            }));
+        }
+        return result;
+    }, []);
+}
+
 function _mapActions(players, action) {
     return _.reduce(players, function(result, player) {
         if (player.action && player.action.type === action) {
@@ -41,11 +53,16 @@ function _mapActions(players, action) {
     }, []);
 }
 
-
+/**
+ * Must be called after actions are applied
+ *
+ * @param players
+ * @returns {{radars: *, moves: *, cannons: *}}
+ */
 function getTurnActions(players) {
     return {
         radars: _mapActions(players, "radar"),
-        moves: _mapActions(players, "move"),
+        moves: _mapMoveActions(players),
         cannons: _mapActions(players, "cannon")
     }
 }

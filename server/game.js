@@ -103,7 +103,6 @@ function Game(config) {
                     player.action = null;
                 });
             }
-            statistics.turns.push(ActionLog.getTurnActions(activePlayers));
 
             // MOVE
             // TODO Handle error cases
@@ -118,6 +117,9 @@ function Game(config) {
 
             // Noactions
             var noActions = Rules.getNoActions(activePlayers);
+
+            // Add statistics after move so action results are applied.
+            statistics.turns.push(ActionLog.getTurnActions(activePlayers));
 
             // TODO Implement message events
             // var messages = Rules.getMessageEvents(activePlayers);
