@@ -5,7 +5,7 @@ var _ = require('lodash');
 
 function Game(config) {
 
-    var players = [];
+    var allPlayers = [];
     var started = false;
     var finished = false;
 
@@ -22,7 +22,7 @@ function Game(config) {
             var id = idCounter++;
             var player = {id: id, socket: socket};
 
-            players.push(player);
+            allPlayers.push(player);
 
             socket.on("action", function(data) {
                 console.log("%s: ", player.name, data);
@@ -48,7 +48,7 @@ function Game(config) {
                     return;
                 }
                 // Clear inactive players (players without connection)
-                players = _.filter(players, function(player) {
+                allPlayers = _.filter(allPlayers, function(player) {
                     return player.socket;
                 });
 
@@ -57,8 +57,8 @@ function Game(config) {
                 player.team = data.team;
                 player.active = true;
 
-                if (Rules.checkForStart(players, config.teamPlayers)) {
-                    start(players, config);
+                if (Rules.checkForStart(allPlayers, config.teamPlayers)) {
+                    start(_.where(allPlayers, {active: true}), config);
                 }
             });
             socket.emit("connected", {id: id, config: config});

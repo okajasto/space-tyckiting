@@ -157,7 +157,7 @@ function getCurrentGameStatus(players) {
     var maxHp = _.max(hpTotals, function(team) { return team.totalHp; });
 
     var winner = undefined;
-    if (minHp.team !== maxHp.team) {
+    if (minHp.team !== maxHp.team || hpTotals.length === 1) {
         winner = maxHp.team
     }
     return {
