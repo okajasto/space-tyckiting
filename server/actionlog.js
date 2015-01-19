@@ -1,7 +1,7 @@
 var _ = require('lodash');
 var fs = require('fs');
 
-var logCounter = 0;
+var logCounter = -1;
 
 function getStartData(teams, players) {
     return teams.map(function(team, index) {
@@ -69,10 +69,10 @@ function getTurnActions(players) {
 
 function writeLog(teams, winner, logData) {
     var resolution = _.isUndefined(winner) || winner === null ? "draw" : winner;
-    var fileName = (logCounter++) + "_" + teams[0] + "_vs_" + teams[1] + "_" + resolution + '.json';
+    var fileName = teams[0] + "_vs_" + teams[1] + "_" + resolution + '.json';
 
-    function performWrite() {
-        fs.writeFile('logs/' + fileName, JSON.stringify(logData), function (err) {
+    function performWrite(counter) {
+        fs.writeFile('logs/' + counter + "_" + fileName, JSON.stringify(logData), function (err) {
             if (err) {
                 throw err;
             }
@@ -81,20 +81,45 @@ function writeLog(teams, winner, logData) {
 
     fs.exists('logs', function(exists) {
         if (exists) {
-            performWrite();
+            if (logCounter < 0) {
+                // Minor optimization. Let's fetch next counter lazily.
+               logCounter = _getNextCounter();
+            }
+            performWrite(logCounter++);
         } else {
             fs.mkdir("logs", function(err) {
                 if (err) {
                     throw err;
                 }
-                performWrite();
+                logCounter = 0;
+                performWrite(logCounter++);
             });
         }
     });
+}
+
+function _getNextCounter() {
+    // Let's check this synchronously.
+    var files = fs.readdirSync("logs");
+    var lastCounter = 0;
+    if (!_.isEmpty(files)) {
+        var counters = files.map(function(file) {
+            var counter = file.split('_');
+            if (counter && counter.length > 0) {
+                var value = parseInt(counter[0], 10);
+                if (value > 0) {
+                    return value;
+                }
+            }
+            return 0;
+        });
+        lastCounter = _.max(counters);
+    }
+    return lastCounter + 1;
 }
 
 module.exports = {
     getStartData: getStartData,
     getTurnActions: getTurnActions,
     writeLog: writeLog
-}
+};
