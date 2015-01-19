@@ -36,8 +36,8 @@ function _mapMoveActions(players) {
     return _.reduce(players, function(result, player) {
         if (player.action && player.action.type === "move") {
             result.push(_mapAction(player, {
-                x: player.x,
-                y: player.y
+                x: player.pos.x,
+                y: player.pos.y
             }));
         }
         return result;
