@@ -1,4 +1,7 @@
 var _ = require('lodash');
+var fs = require('fs');
+
+var logCounter = 0;
 
 function getStartData(teams, players) {
     return teams.map(function(team, index) {
@@ -47,7 +50,34 @@ function getTurnActions(players) {
     }
 }
 
+function writeLog(teams, winner, logData) {
+    var resolution = _.isUndefined(winner) || winner === null ? "draw" : winner;
+    var fileName = (logCounter++) + "_" + teams[0] + "_vs_" + teams[1] + "_" + resolution + '.json';
+
+    function performWrite() {
+        fs.writeFile('logs/' + fileName, JSON.stringify(logData), function (err) {
+            if (err) {
+                throw err;
+            }
+        });
+    }
+
+    fs.exists('logs', function(exists) {
+        if (exists) {
+            performWrite();
+        } else {
+            fs.mkdir("logs", function(err) {
+                if (err) {
+                    throw err;
+                }
+                performWrite();
+            });
+        }
+    });
+}
+
 module.exports = {
     getStartData: getStartData,
-    getTurnActions: getTurnActions
+    getTurnActions: getTurnActions,
+    writeLog: writeLog
 }

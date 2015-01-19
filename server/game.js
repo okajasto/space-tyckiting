@@ -127,8 +127,14 @@ function Game(config) {
             if (isFinished) {
                 finished = true;
                 started = false;
-                var message = Messages.endMessage(players, teams);
+
+                var endResult = Rules.getCurrentGameStatus(players);
+
+                var message = Messages.endMessage(endResult.winner);
                 console.log("Game Ended", message);
+
+                ActionLog.writeLog(_.pluck(endResult.teamHps, "team"), endResult.winner, statistics);
+
                 players.forEach(function(player) {
                     if (player.socket) {
                         player.socket.emit("end", message);
