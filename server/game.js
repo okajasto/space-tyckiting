@@ -102,6 +102,13 @@ function Game(config) {
                 activePlayers.forEach(function(player) {
                     player.action = null;
                 });
+            } else {
+                activePlayers.forEach(function(player) {
+                    if (player.action) {
+                        player.action.x = parseInt(player.action.x);
+                        player.action.y = parseInt(player.action.y);
+                    }
+                });
             }
 
             // MOVE
