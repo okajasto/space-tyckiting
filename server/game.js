@@ -105,8 +105,8 @@ function Game(config) {
             } else {
                 activePlayers.forEach(function(player) {
                     if (player.action) {
-                        player.action.x = parseInt(player.action.x);
-                        player.action.y = parseInt(player.action.y);
+                        player.action.x = parseInt(player.action.x, 10);
+                        player.action.y = parseInt(player.action.y, 10);
                     }
                 });
             }
