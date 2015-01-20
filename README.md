@@ -44,7 +44,7 @@ When you get the example bots running, follow with [Creating a new AI](#creating
 Choose your team's / AI's name. Two teams can't have the same name.
 Remember this when you are locally developing.
 
-Run ```./create-new-ai your-ai-name```, open `client/ai/your-ai-name/ai.js` and edit the code! You can run your AI with e.g. `node start-ai.js --bot=your-ai-name --port=5000`.
+Run ```./create-new-ai your-ai-name```, open `client/ai/your-ai-name/ai.js` and edit the code! You can run your AI with e.g. `node start-ai.js --ai=your-ai-name --port=5000`.
 
 There's a very simple example of an AI which you should take a look at: [client/ai/dummy/ai.js](client/ai/dummy/ai.js).
 
