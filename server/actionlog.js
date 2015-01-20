@@ -70,6 +70,7 @@ function getTurnActions(players) {
 function writeLog(teams, winner, logData) {
     var resolution = _.isUndefined(winner) || winner === null ? "draw" : winner;
     var fileName = teams[0] + "_vs_" + teams[1] + "_" + resolution + '.json';
+    fileName = fileName.replace(/ /g, '_');
 
     function performWrite(counter) {
         fs.writeFile('logs/' + counter + "_" + fileName, JSON.stringify(logData), function (err) {
