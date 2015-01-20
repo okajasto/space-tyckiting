@@ -15,7 +15,7 @@ var config = {
     cannon: 1,
     radar: 3,
     see: 2,
-    maxCount: 1000,
+    maxCount: 200,
     loopTime: 300
 };
 
