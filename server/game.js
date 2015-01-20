@@ -118,8 +118,10 @@ function Game(config) {
             // Noactions
             var noActions = Rules.getNoActions(activePlayers);
 
-            // Add statistics after move so action results are applied.
-            statistics.turns.push(ActionLog.getTurnActions(activePlayers));
+            if (counter !== 0) {
+                // Add statistics after move so action results are applied.
+                statistics.turns.push(ActionLog.getTurnActions(activePlayers));
+            }
 
             // TODO Implement message events
             // var messages = Rules.getMessageEvents(activePlayers);
