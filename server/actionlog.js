@@ -72,7 +72,12 @@ function writeLog(teams, winner, logData) {
     var fileName = teams[0] + "_vs_" + teams[1] + "_" + resolution + '.json';
 
     function performWrite(counter) {
-        fs.writeFile('logs/' + counter + "_" + fileName, JSON.stringify(logData), function (err) {
+        fs.writeFile('logs/' + counter + "_" + fileName, JSON.stringify({teams: logData.teams, turns: logData.turns}), function (err) {
+            if (err) {
+                throw err;
+            }
+        });
+        fs.writeFile('logs/messages_' + counter + "_" + fileName, JSON.stringify(logData.messages), function(err) {
             if (err) {
                 throw err;
             }

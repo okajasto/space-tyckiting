@@ -86,7 +86,7 @@ function Game(config) {
             });
             started = true;
             setTimeout(function () {
-                gameLoop(teams, players, 0, {teams: ActionLog.getStartData(teams, players), turns: []});
+                gameLoop(teams, players, 0, {teams: ActionLog.getStartData(teams, players), turns: [], messages: []});
             }, 200);
         };
 
@@ -123,8 +123,6 @@ function Game(config) {
                 statistics.turns.push(ActionLog.getTurnActions(activePlayers));
             }
 
-            // TODO Implement message events
-            // var messages = Rules.getMessageEvents(activePlayers);
             activePlayers = Rules.applyDamages(cannons, activePlayers);
             var isFinished = Rules.isFinished(players, counter, config.maxCount);
 
@@ -148,7 +146,10 @@ function Game(config) {
 
                 var broadCasts = [Messages.getRoundStartMessage(counter)];
 
-                broadCasts = broadCasts.concat(Messages.getMessages(activePlayers));
+                var messages = Messages.getMessages(activePlayers);
+                statistics.messages.push({round: counter, messages: messages});
+
+                broadCasts = broadCasts.concat(messages);
 
                 // Check if any tank was destroyed this turn
                 var newlyDestroyed = _.filter(activePlayers, function(player) {
