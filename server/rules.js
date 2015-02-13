@@ -141,6 +141,42 @@ function checkForStart(players, playersPerTeam) {
     return _.where(players, {active: true}).length >= playersPerTeam * 2;
 }
 
+function getCurrentGameStatus(players) {
+
+    var teams = _.uniq(_.pluck(players, "team"));
+
+    var hpTotals = _.reduce(teams, function(result, team) {
+        result.push({
+            team: team,
+            totalHp: _getTotalHpByTeam(players, team)
+        });
+        return result;
+    }, []);
+
+    var minHp = _.min(hpTotals, function(team) { return team.totalHp; });
+    var maxHp = _.max(hpTotals, function(team) { return team.totalHp; });
+
+    var winner = undefined;
+    if (minHp.team !== maxHp.team || hpTotals.length === 1) {
+        winner = maxHp.team
+    }
+    return {
+        teamHps: hpTotals,
+        winner: winner
+    }
+}
+
+function _getTotalHpByTeam(players, team) {
+    return players.reduce(function(sum, player) {
+        if (player.team === team) {
+            return sum + (player.hp > 0 ? player.hp : 0);
+        } else {
+            return sum;
+        }
+    }, 0);
+}
+
+
 function isFinished(players, counter, maxCount) {
     if (counter >= maxCount) {
         return true;
@@ -149,12 +185,12 @@ function isFinished(players, counter, maxCount) {
         return true;
     }
 
-    var activePlayers = _.filter(players, function(player) {
+    var playersAlive = _.filter(players, function(player) {
         return player.hp > 0 && player.active
     });
 
     // Only one team or no teams left
-    return _.uniq(_.pluck(activePlayers, "team")).length <= 1;
+    return _.uniq(_.pluck(playersAlive, "team")).length <= 1;
 }
 
 module.exports = {
@@ -165,6 +201,7 @@ module.exports = {
     getRadarEvents: getRadarEvents,
     getCannonEvents: getCannonEvents,
     getSeeingEvents: getSeeingEvents,
+    getCurrentGameStatus: getCurrentGameStatus,
     checkForStart: checkForStart,
     isFinished: isFinished
 }

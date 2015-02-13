@@ -94,28 +94,17 @@ function getCannonMessagesByPlayer(cannons, player) {
     return damages;
 }
 
-function endMessage(players, teams) {
-
-    // TODO More detailed victory message
-    var winners = _.filter(players, function(player) {
-        return player.active && player.hp > 0;
-    });
+function endMessage(winner) {
 
     var message = {
         type: "end",
         data: {
+            winner: {
+                team: winner
+            }
         }
     };
 
-    if (winners.length === 0) {
-        message.data.winner = {
-            team: undefined
-        };
-    } else {
-        message.data.winner = {
-            team: winners[0].team
-        }
-    }
     return message;
 }
 

@@ -5,7 +5,7 @@ var _ = require('lodash');
 
 function Game(config) {
 
-    var players = [];
+    var allPlayers = [];
     var started = false;
     var finished = false;
 
@@ -22,7 +22,7 @@ function Game(config) {
             var id = idCounter++;
             var player = {id: id, socket: socket};
 
-            players.push(player);
+            allPlayers.push(player);
 
             socket.on("action", function(data) {
                 console.log("%s: ", player.name, data);
@@ -48,7 +48,7 @@ function Game(config) {
                     return;
                 }
                 // Clear inactive players (players without connection)
-                players = _.filter(players, function(player) {
+                allPlayers = _.filter(allPlayers, function(player) {
                     return player.socket;
                 });
 
@@ -57,8 +57,8 @@ function Game(config) {
                 player.team = data.team;
                 player.active = true;
 
-                if (Rules.checkForStart(players, config.teamPlayers)) {
-                    start(players, config);
+                if (Rules.checkForStart(allPlayers, config.teamPlayers)) {
+                    start(_.where(allPlayers, {active: true}), config);
                 }
             });
             socket.emit("connected", {id: id, config: config});
@@ -86,7 +86,7 @@ function Game(config) {
             });
             started = true;
             setTimeout(function () {
-                gameLoop(teams, players, 0, {teams: ActionLog.getStartData(teams, players), turns: []});
+                gameLoop(teams, players, 0, {teams: ActionLog.getStartData(teams, players), turns: [], messages: []});
             }, 200);
         };
 
@@ -102,8 +102,14 @@ function Game(config) {
                 activePlayers.forEach(function(player) {
                     player.action = null;
                 });
+            } else {
+                activePlayers.forEach(function(player) {
+                    if (player.action) {
+                        player.action.x = parseInt(player.action.x, 10);
+                        player.action.y = parseInt(player.action.y, 10);
+                    }
+                });
             }
-            statistics.turns.push(ActionLog.getTurnActions(activePlayers));
 
             // MOVE
             // TODO Handle error cases
@@ -119,16 +125,25 @@ function Game(config) {
             // Noactions
             var noActions = Rules.getNoActions(activePlayers);
 
-            // TODO Implement message events
-            // var messages = Rules.getMessageEvents(activePlayers);
+            if (counter !== 0) {
+                // Add statistics after move so action results are applied.
+                statistics.turns.push(ActionLog.getTurnActions(activePlayers));
+            }
+
             activePlayers = Rules.applyDamages(cannons, activePlayers);
             var isFinished = Rules.isFinished(players, counter, config.maxCount);
 
             if (isFinished) {
                 finished = true;
                 started = false;
-                var message = Messages.endMessage(players, teams);
+
+                var endResult = Rules.getCurrentGameStatus(players);
+
+                var message = Messages.endMessage(endResult.winner);
                 console.log("Game Ended", message);
+
+                ActionLog.writeLog(_.pluck(endResult.teamHps, "team"), endResult.winner, statistics);
+
                 players.forEach(function(player) {
                     if (player.socket) {
                         player.socket.emit("end", message);
@@ -138,7 +153,10 @@ function Game(config) {
 
                 var broadCasts = [Messages.getRoundStartMessage(counter)];
 
-                broadCasts = broadCasts.concat(Messages.getMessages(activePlayers));
+                var messages = Messages.getMessages(activePlayers);
+                statistics.messages.push({round: counter, messages: messages});
+
+                broadCasts = broadCasts.concat(messages);
 
                 // Check if any tank was destroyed this turn
                 var newlyDestroyed = _.filter(activePlayers, function(player) {
