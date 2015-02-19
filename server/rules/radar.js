@@ -1,15 +1,15 @@
 var _ = require('lodash');
-var tools = require('rules/tools');
+var tools = require('./tools.js');
 
 function events(actions, world, rules) {
-    return _.flatten(tools.filterPlayersByEventType(actions, "radar").map(_.partial(_handleRadar, world.players, rules.radarRadius)));
+    return _.flatten(tools.filterPlayersByEventType(actions, "radar").map(_.partial(_handleRadar, world.players, rules.radar)));
 }
 
 function _handleRadar(tanks, radius, action) {
-    return _.filter(tanks, _.partial(_isInside, action, radius)).reduce(function(memo, tank) {
-        if (tank.team !== player.team) {
+    return _.filter(tanks, _.partial(tools.isInside, action.action, radius)).reduce(function(memo, tank) {
+        if (tank.team !== action.team) {
             memo.push({
-                source: player,
+                source: action,
                 target: tank
             })
         }
@@ -34,9 +34,10 @@ function getDetectedMessage(event) {
 
 function getRadarMessage(event) {
     return tools.createMessage(event.source.team, {
-        event: "radar",
+        event: "see",
         data: {
-            id: event.target.id
+            source: event.target.id,
+            positions: [tools.playerInfoWithPosition(event.target)]
         }
     });
 }

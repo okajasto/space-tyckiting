@@ -1,15 +1,14 @@
 var _ = require('lodash');
-var tools = require('rules/tools');
+var tools = require('./tools.js');
 
-function getNoActions(actions, world, rules) {
-    var noActions = _.filter(world.players, function(player) {
+function events(actions, world, rules) {
+    return _.filter(world.players, function(player) {
         if (_.findWhere(actions, {id:  player.id})) {
-            return true;
-        } else {
             return false;
+        } else {
+            return true;
         }
     });
-    return noActions;
 }
 
 function messages(events) {

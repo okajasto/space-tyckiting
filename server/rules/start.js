@@ -1,41 +1,35 @@
 var _ = require('lodash');
-var tools = require('rules/tools');
+var tools = require('./tools.js');
 
 function events(actions, world, rules, counter) {
     if (counter === 0) {
-        return [{
-            teams: '',
-            opponents: '',
+        return {
+            teams: world.teams,
+            players: world.players,
             rules: rules
-        }]
+        };
     }
-    return [];
+    return null;
 }
 
 function messages(events) {
-    return [];
-    /*
-    return events.reduce(function(memo, event) {
-        return memo.concat(getDetectedMessage(event)).concat(getRadarMessage(event));
-    }, []); */
-}
+    if (events) {
+        return events.teams.map(function(team) {
+            var teamPlayers = _.where(events.players, {team: team});
+            var opponents = _.without(events.players, teamPlayers);
 
-function startMessage(events) {
-    var message = {
-    };
-    /* message.team = _.reduce(players, function(memo, other) {
-        if (other.id !== player.id && other.team === player.team) {
-            memo.push(_playerInfoWithPosition(other));
-        }
-        return memo;
-    }, []);
-    message.opponents = _.reduce(players, function(memo, other) {
-        if (other.id !== player.id && other.team !== player.team && other.active) {
-            memo.push(_playerInfo(other));
-        }
-        return memo;
-    }, []); */
-    return message;
+            return tools.createMessage(team, {
+                team: teamPlayers.map(function(player) {
+                    return tools.playerInfoWithPositionAndHp(player);
+                }),
+                opponents: opponents.map(function(opponent) {
+                    return tools.playerInfo(opponent);
+                })
+            });
+        });
+    } else {
+        return [];
+    }
 }
 
 module.exports = {

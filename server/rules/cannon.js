@@ -1,11 +1,11 @@
 var _ = require('lodash');
-var tools = require('rules/tools');
+var tools = require('./tools.js');
 
 function events(actions, world, rules) {
-    return _.flatten(tools.filterPlayersByEventType(actions, "cannon").map(_.partial(_handleBlast, world.players, rules.cannonRadius, 2)));
+    return _.flatten(tools.filterPlayersByEventType(actions, "cannon").map(_.partial(_handleBlast, world.players, rules.cannon, 2)));
 }
 
-function apply(events, world, rules) {
+function applyEvents(events, world, rules) {
     events.forEach(function(cannon) {
         _.where(world.players, {id: cannon.target.id}).map(function(player) {
             player.hp -= cannon.damage;
@@ -16,9 +16,9 @@ function apply(events, world, rules) {
 }
 
 function _handleBlast(tanks, radius, directDamage, action) {
-    return _.filter(tanks, _.partial(tools.isInside, action, radius)).map(function(tank) {
+    return _.filter(tanks, _.partial(tools.isInside, action.action, radius)).map(function(tank) {
         return {
-            source: action.id,
+            source: action,
             target: tank,
             damage: tools.isDirect(tank.pos, action) ? directDamage : 1
         }
@@ -28,13 +28,14 @@ function _handleBlast(tanks, radius, directDamage, action) {
 function messages(events, world, rules) {
     return events.reduce(function(memo, event) {
         return memo.concat(hitMessage(event)).concat(damageMessage(event));
-    }, [])
+    }, []);
 }
 
 function damageMessage(event) {
-    var playerInfo = tools.playerInfo(event.target.team);
+    var playerInfo = tools.playerInfo(event.target);
     playerInfo.damage = event.damage;
-    return tools.createMessage(event.target, {
+
+    return tools.createMessage(event.target.team, {
         event: "hit",
         data: playerInfo
     });
@@ -44,12 +45,13 @@ function damageMessage(event) {
 function hitMessage(event) {
     return tools.createMessage(event.source.team, {
         event: "hit",
+        source: tools.playerInfo(event.source),
         data: tools.playerInfo(event.target)
     });
 }
 
 module.exports = {
     events: events,
-    apply: apply,
+    applyEvents: applyEvents,
     messages: messages
 }

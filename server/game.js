@@ -13,8 +13,9 @@ function Game(config) {
     var idCounter = 0;
 
     var rules = [
-        require('./rules/start'),
         require('./rules/round'),
+        require('./rules/start'),
+        require('./rules/status'),
         require('./rules/noaction'),
         require('./rules/move'),
         require('./rules/cannon'),
@@ -104,6 +105,8 @@ function Game(config) {
 
         var gameLoop = function(teams, players, counter, statistics) {
 
+            console.log("Round ", counter);
+
             var activePlayers = _.filter(players, function(player) {
                 return player.hp > 0 && player.active;
             });
@@ -124,33 +127,43 @@ function Game(config) {
 
             var world = {
                 teams: teams,
-                player: activePlayers
+                players: activePlayers,
+                allPlayers: players
             };
 
-            var newState = loop(counter, activePlayers, world, rules, config);
-
-            world.teams.forEach(function(team) {
-                var messages = _.filter(world.messages, function(message) {
-                    return (message.target === team || message.target === "all");
-                });
-                // Send messages to a team
-            });
+            var round = loop(counter, activePlayers, world, rules, config);
 
             teams.forEach(function(team) {
-
-                var messages = _.filter(world.messages, function(message) {
-                    return (message.target === team || message.target === "all");
+                var messages = _.filter(round.messages, function(message) {
+                    return (message && (message.target === team || message.target === "all"));
+                }).map(function(message) {
+                    return message.content;
                 });
-
                 sendToTeam(team, activePlayers, "events", messages);
             });
 
-            if (!newState.world.finished) {
+            players.forEach(function(player) {
+                // Clear the previous events
+                player.action = null;
+                player.message = null;
+            });
+
+            if (!round.world.finished) {
                 setTimeout(function () {
                     gameLoop(teams, players, counter+1, statistics);
                 }, config.loopTime);
-            }
+            } else {
+                finished = true;
+                started = false;
 
+                teams.forEach(function(team) {
+                    sendToTeam(team, players, "end", _.filter(round.messages, function(message) {
+                        return message.content.event === "end";
+                    }).map(function(m) {
+                        return m.content.data;
+                    }));
+                });
+            }
          /*   // Actually just mutates the original array
             var activePlayers = _.filter(players, function(player) {
                 return player.hp > 0 && player.active;

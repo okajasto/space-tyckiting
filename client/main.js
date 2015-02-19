@@ -182,8 +182,7 @@ define([
 
                     socket.on("end", function(data) {
                         socket.removeAllListeners("events");
-
-                        if (data.data.winner && data.data.winner.team === botTeam) {
+                        if (data[0].data.winner && data[0].data.winner.team === botTeam) {
                             showNotification("YOU<br>WIN");
                         } else {
                             showNotification("YOU<br>LOSE");

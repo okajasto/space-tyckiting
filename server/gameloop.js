@@ -1,12 +1,13 @@
-var gameLoop = function(counter, actions, world, rules, config) {
+var _ = require('lodash');
 
-    return rules.reduce(function(state, rule, counter) {
+var round = function(counter, actions, world, rules, config) {
+    return rules.reduce(function(state, rule) {
         var ruleEvents = [];
         var newState = state.world;
         var newMessages = [];
 
         if (_.isFunction(rule.events)) {
-            ruleEvents = rule.events(newState, actions, config, counter);
+            ruleEvents = rule.events(actions, newState, config, counter);
         }
         if (_.isFunction(rule.applyEvents)) {
             newState = rule.applyEvents(ruleEvents, newState, config);
@@ -20,7 +21,6 @@ var gameLoop = function(counter, actions, world, rules, config) {
             messages: state.messages.concat(newMessages)
         }
     }, { world: world, events: [], messages: []});
-
 };
 
-module.exports = gameLoop;
+module.exports = round;

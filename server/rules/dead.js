@@ -1,5 +1,5 @@
 var _ = require('lodash');
-var tools = require('rules/tools');
+var tools = require('./tools.js');
 
 function events(actions, world, rules) {
     return _.filter(world.players, function(player) {
@@ -7,7 +7,7 @@ function events(actions, world, rules) {
     });
 }
 
-function apply(dead, world, rules) {
+function applyEvents(dead, world, rules) {
     var players = _.without(world.players, dead);
     world.players = players;
     return world;
@@ -24,6 +24,6 @@ function messages(events) {
 
 module.exports = {
     events: events,
-    apply: apply,
+    applyEvents: applyEvents,
     messages: messages
 }

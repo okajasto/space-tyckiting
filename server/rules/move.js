@@ -1,11 +1,11 @@
 var _ = require('lodash');
-var tools = require('rules/tools');
+var tools = require('./tools.js');
 
 function events(actions, world, rules) {
-    return _.flatten(tools.filterPlayersByEventType(actions, "move").map(_.partial(_handleMove, rules.moveLength, rules.maxWidth, rules.maxHeight, world)));
+    return _.flatten(tools.filterPlayersByEventType(actions, "move").map(_.partial(_handleMove, rules.move, rules.width, rules.height, world)));
 }
 
-function apply(moves, world, rules) {
+function applyEvents(moves, world, rules) {
     moves.forEach(function(move) {
         _.where(world.players, {id: move.target.id}).map(function(player) {
             player.pos = {x: move.x, y: move.y};
@@ -18,11 +18,9 @@ function apply(moves, world, rules) {
     return world;
 }
 
-function _handleMove(moveLength, maxWidth, maxHeight, world, action) {
+function _handleMove(moveLength, maxWidth, maxHeight, world, player) {
 
-    var player = world.players[action.id];
-
-    if (tools.isInside(action, moveLength, player)) {
+    if (tools.isInside(player.action, moveLength, player)) {
         var x = player.action.x;
         var y = player.action.y;
 
@@ -54,10 +52,10 @@ function _handleMove(moveLength, maxWidth, maxHeight, world, action) {
 
 function messages(events) {
     return events.map(function(event) {
-        var playerInfo = _.playerInfo(event.target);
+        var playerInfo = tools.playerInfo(event.target);
         playerInfo.x = event.x;
         playerInfo.y = event.y;
-        return tools.createMessage(event.target, {
+        return tools.createMessage(event.target.team, {
             event: "move",
             data: playerInfo
         });
@@ -66,6 +64,6 @@ function messages(events) {
 
 module.exports = {
     events: events,
-    apply: apply,
+    applyEvents: applyEvents,
     messages: messages
 }
