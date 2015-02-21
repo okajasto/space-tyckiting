@@ -21,6 +21,7 @@ function Game(config) {
         require('./rules/move'),
         require('./rules/cannon'),
         require('./rules/dead'),
+        require('./rules/see'),
         require('./rules/radar'),
         require('./rules/end')
     ];
@@ -50,7 +51,6 @@ function Game(config) {
                 } else if (data.type === "message") {
 
                 } else if (data.type === "join" ) {
-
                     if (started) {
                         if (socket) {
                             socket.send(JSON.stringify({type: "error", data: "Already started"}));
@@ -74,15 +74,6 @@ function Game(config) {
                 }
             });
 
-        /*    socket.on("message", function(message) {
-                player.message = message;
-            }); */
-
-        /*    socket.on('disconnect', function () {
-                console.log("Disconnect", id);
-                player.active = false;
-            }); */
-
             socket.send(JSON.stringify({type: "connected", data: {id: id, config: config}}));
         });
 
@@ -101,6 +92,7 @@ function Game(config) {
                 player.hp = config.startHp;
                 player.pos = {x: rand(config.width), y: rand(config.height)};
             });
+
             players.forEach(function(player) {
                 if (player.socket && player.socket.readyState === player.socket.OPEN) {
                     player.socket.send(JSON.stringify({type: "start", data: Messages.startMessage(player, players, config)}));

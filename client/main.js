@@ -128,6 +128,7 @@ define([
                         ui.reset();
                         bots[botIndex].bot_class = ui.getBotClass(botIndex);
                         grid.updatePosition(botId, data.you.x, data.you.y, bots[botIndex].bot_class, false);
+
                     } else if (content.type === "events") {
 
                         var events = content.data;
