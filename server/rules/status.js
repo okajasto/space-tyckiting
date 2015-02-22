@@ -6,10 +6,10 @@ function events(actions, world, rules, counter) {
 }
 
 function messages(events) {
-    return events.teams.map(function(team) {
-        return tools.createMessage(team, {
+    return events.players.map(function(player) {
+        return tools.createMessage(player, {
             event: "team",
-            data: _.where(events.allPlayers, {team: team}).map(tools.playerInfoWithPositionAndHp)
+            data: _.where(events.allPlayers, {player: player}).map(tools.botInfoWithPositionAndHp)
         });
     });
 }

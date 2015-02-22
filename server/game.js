@@ -8,14 +8,16 @@ var ws = require('ws');
 function Game(config) {
 
     var allPlayers = [];
+    var allBots = [];
     var started = false;
     var finished = false;
 
     var idCounter = 0;
+    var botIdCounter = 0;
 
     var rules = [
         require('./rules/round'),
-        require('./rules/start'),
+//        require('./rules/start'),
         require('./rules/status'),
         require('./rules/noaction'),
         require('./rules/move'),
@@ -35,18 +37,26 @@ function Game(config) {
         ws.on('connection', function(socket){
 
             var id = idCounter++;
-            var player = {id: id, socket: socket};
+            var bots = [{id: botIdCounter++, name: id + "_0"}, {id: botIdCounter++, name: id + "_1"}, {id: botIdCounter++, name: id + "_2"}];
+
+            console.log("Bots", bots);
+
+            var player = {id: id, socket: socket, bots: bots};
 
             allPlayers.push(player);
+
+            socket.on("close", function(){
+
+            });
 
             socket.on("message", function(rawData) {
                 var data = JSON.parse(rawData);
                 var content = data.data;
 
-                if (data.type === "action") {
+                if (data.type === "actions") {
                     console.log("%s: ", player.name, content);
                     if (!finished) {
-                        player.action = content;
+                        player.actions = content;
                     }
                 } else if (data.type === "message") {
 
@@ -62,103 +72,117 @@ function Game(config) {
                         return player.socket.readyState === player.socket.OPEN;
                     });
 
-                    console.log("Received join", player.id,  player.socket.readyState);
+                    console.log("Content", content);
 
                     player.name = content.name;
-                    player.team = content.team;
+                    // TODO Get bot names
+//                    player.bots = content.bots;
                     player.active = true;
 
-                    if (Rules.checkForStart(allPlayers, config.teamPlayers)) {
+                    if (Rules.checkForStart(allPlayers)) {
                         start(_.where(allPlayers, {active: true}), config);
                     }
                 }
             });
-
-            socket.send(JSON.stringify({type: "connected", data: {id: id, config: config}}));
+            socket.send(JSON.stringify({type: "connected", data: {id: id, config: config, bots: bots}}));
         });
 
-        var sendToTeam = function(team, players, eventType, data) {
-            var members = _.where(players, {team: team});
-            members.forEach(function(member) {
-                member.socket.send(JSON.stringify({type: eventType, data: data}));
-            });
+        var sendToPlayer = function(player, eventType, data) {
+            player.socket.send(JSON.stringify({type: eventType, data: data}));
         };
 
         var start = function(players, config) {
-            var teams = _.uniq(_.pluck(players,'team'));
             finished = false;
             // Initialize positions and data
+            var bots = [];
+
             players.forEach(function(player) {
-                player.hp = config.startHp;
-                player.pos = {x: rand(config.width), y: rand(config.height)};
+                for (var i = 0; i < 3; ++i) {
+                    bots.push({
+                        id: player.bots[i].id,
+                        name: player.bots[i].name,
+                        player: player.id,
+                        hp: config.startHp,
+                        pos: {x: rand(config.width), y: rand(config.height)}
+                    });
+                };
             });
 
             players.forEach(function(player) {
                 if (player.socket && player.socket.readyState === player.socket.OPEN) {
-                    player.socket.send(JSON.stringify({type: "start", data: Messages.startMessage(player, players, config)}));
+                    console.log("Start Message to ", player.name);
+                    sendToPlayer(player, "start", Messages.startMessage(player, players, bots, config));
                 }
             });
+
             started = true;
             setTimeout(function () {
-                gameLoop(teams, players, 0, {teams: ActionLog.getStartData(teams, players), turns: [], messages: []});
+                gameLoop(players, bots, 0, [] /*, {teams: ActionLog.getStartData(teams, players), turns: [], messages: []} */);
             }, 200);
         };
 
-        var gameLoop = function(teams, players, counter, statistics) {
+        var gameLoop = function(players, bots, counter, statistics) {
 
             console.log("Round ", counter);
 
-            var activePlayers = _.filter(players, function(player) {
-                return player.hp > 0 && player.active;
+            var activeBots = _.filter(bots, function(bot) {
+                return bot.hp > 0;
             });
 
-            if (counter === 0) {
-                // The round 0 is start round. No actions should be performed before it.
-                activePlayers.forEach(function(player) {
-                    player.action = null;
-                });
-            } else {
-                activePlayers.forEach(function(player) {
-                    if (player.action) {
-                        player.action.x = parseInt(player.action.x, 10);
-                        player.action.y = parseInt(player.action.y, 10);
+            var actions = [];
+
+            if (counter > 0) {
+                // TODO change to map etc. or start using Rx.js
+                players.forEach(function(player) {
+
+                    console.log("PLAYER-ACTIONS: ", player.actions);
+
+                    if (player.actions) {
+                        player.actions.forEach(function(action) {
+                            var bot = _.where(activeBots, {id: action.id, player: player.id});
+                            if (bot) {
+                                // TODO <- clone this
+                                var _action = action;
+                                _action.x = parseInt(_action.x, 10);
+                                _action.y = parseInt(_action.y, 10);
+                                actions.push(_action);
+                            }
+                        });
                     }
                 });
             }
 
+            console.log("ACTIONS", actions);
+
             var world = {
-                teams: teams,
-                players: activePlayers,
-                allPlayers: players
+                players: players,
+                bots: activeBots,
+                allBots: bots
             };
 
-            var round = loop(counter, activePlayers, world, rules, config);
+            var round = loop(counter, actions, world, rules, config);
 
-            teams.forEach(function(team) {
+            players.forEach(function(player) {
                 var messages = _.filter(round.messages, function(message) {
-                    return (message && (message.target === team || message.target === "all"));
+                    return (message && (message.target === player.id || message.target === "all"));
                 }).map(function(message) {
                     return message.content;
                 });
-                sendToTeam(team, activePlayers, "events", messages);
-            });
 
-            players.forEach(function(player) {
-                // Clear the previous events
-                player.action = null;
-                player.message = null;
+                console.log("SEND to %s %s", player.name, messages);
+                sendToPlayer(player, "events", messages);
             });
 
             if (!round.world.finished) {
                 setTimeout(function () {
-                    gameLoop(teams, players, counter+1, statistics);
+                    gameLoop(players, bots, counter+1, statistics);
                 }, config.loopTime);
             } else {
                 finished = true;
                 started = false;
 
-                teams.forEach(function(team) {
-                    sendToTeam(team, players, "end", _.filter(round.messages, function(message) {
+                players.forEach(function(player) {
+                    sendToPlayer(player, "end", _.filter(round.messages, function(message) {
                         return message.content.event === "end";
                     }).map(function(m) {
                         return m.content.data;

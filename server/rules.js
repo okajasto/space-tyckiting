@@ -133,9 +133,9 @@ function _handleMove(moveLength, maxWidth, maxHeight, player) {
     }
 }
 
-function checkForStart(players, playersPerTeam) {
-    console.log("Starting", players.length, _.where(players, {active: true}).length, playersPerTeam * 2);
-    return _.where(players, {active: true}).length >= playersPerTeam * 2;
+function checkForStart(players) {
+    console.log("Starting", players.length, _.where(players, {active: true}).length, 2);
+    return _.where(players, {active: true}).length >= 2;
 }
 
 function getCurrentGameStatus(players) {

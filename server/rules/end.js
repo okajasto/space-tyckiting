@@ -3,7 +3,7 @@ var tools = require('./tools.js');
 
 function events(actions, world, rules, counter) {
     // On tie, count hp
-    if (counter >= rules.maxCount || _.isEmpty(world.players)) {
+    if (counter >= rules.maxCount || _.isEmpty(world.bots)) {
         return {
             data: {
                 winner: {
@@ -12,11 +12,11 @@ function events(actions, world, rules, counter) {
             }
         }
     }
-    if (_.unique(_.pluck(world.players, "team")).length === 1) {
+    if (_.unique(_.pluck(world.bots, "player")).length === 1) {
         return {
             data: {
                 winner: {
-                    team: world.players[0].team
+                    player: world.bots[0].player
                 }
             }
         }

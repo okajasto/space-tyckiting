@@ -1,9 +1,7 @@
 var _ = require('lodash');
 
-function filterPlayersByEventType(players, type) {
-    return _.filter(players, function(player) {
-        return player.action && player.action.type === type;
-    });
+function filterActionsByType(actions, type) {
+    return _.where(actions, {type: type});
 }
 
 function inDistance(sourcePos, targetPos, distance) {
@@ -31,39 +29,39 @@ function createMessage(target, content) {
     }
 }
 
-function playerInfoWithPosition(player) {
-    return playerInfo(player, true);
+function botInfoWithPosition(bot) {
+    return botInfo(bot, true);
 }
 
-function playerInfoWithPositionAndHp(player) {
-    return playerInfo(player, true, true);
+function botInfoWithPositionAndHp(bot) {
+    return botInfo(bot, true, true);
 }
 
-function playerInfo(player, includePosition, includeHp) {
+function botInfo(bot, includePosition, includeHp) {
     var info = {
-        "id": player.id,
-        "name": player.name,
-        "team": player.team
+        "id": bot.id,
+        "name": bot.name,
+        "player": bot.player
     };
 
     if (includePosition) {
-        info.x  = player.pos.x;
-        info.y = player.pos.y;
+        info.x  = bot.pos.x;
+        info.y = bot.pos.y;
     }
 
     if (includeHp) {
-        info.hp = player.hp;
+        info.hp = bot.hp;
     }
     return info;
 }
 
 module.exports = {
-    filterPlayersByEventType: filterPlayersByEventType,
+    filterActionsByType: filterActionsByType,
     inDistance: inDistance,
     isInside: isInside,
     isDirect: isDirect,
-    playerInfoWithPosition: playerInfoWithPosition,
-    playerInfoWithPositionAndHp: playerInfoWithPositionAndHp,
-    playerInfo: playerInfo,
+    botInfoWithPosition: botInfoWithPosition,
+    botInfoWithPositionAndHp: botInfoWithPositionAndHp,
+    botInfo: botInfo,
     createMessage: createMessage
 }

@@ -4,8 +4,8 @@ var tools = require('./tools.js');
 function events(actions, world, rules, counter) {
     if (counter === 0) {
         return {
-            teams: world.teams,
             players: world.players,
+            bots: world.bots,
             rules: rules
         };
     }
@@ -14,16 +14,16 @@ function events(actions, world, rules, counter) {
 
 function messages(events) {
     if (events) {
-        return events.teams.map(function(team) {
-            var teamPlayers = _.where(events.players, {team: team});
-            var opponents = _.without(events.players, teamPlayers);
+        return events.players.map(function(player) {
+            var playerBots = _.where(events.bots, {player: player});
+            var opponents = _.without(events.bots, playerBots);
 
-            return tools.createMessage(team, {
-                team: teamPlayers.map(function(player) {
-                    return tools.playerInfoWithPositionAndHp(player);
+            return tools.createMessage(player, {
+                team: playerBots.map(function(bot) {
+                    return tools.botInfoWithPositionAndHp(bot);
                 }),
                 opponents: opponents.map(function(opponent) {
-                    return tools.playerInfo(opponent);
+                    return tools.botInfo(opponent);
                 })
             });
         });
