@@ -9,7 +9,7 @@ function events(actions, world, rules) {
 
 function messages(events) {
     return events.map(function(event) {
-        return tools.createMessage(event.team, {
+        return tools.createMessage(event.player, {
             event: "noaction",
             data: tools.botInfo(event)
         })

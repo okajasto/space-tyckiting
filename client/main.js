@@ -136,7 +136,12 @@ define([
 
                 } else if (content.type === "events") {
 
-                    var events = content.data;
+                    var events = content.data.map(function(data) {
+                        if (data.data.player === playerId) {
+                            data.data.team = botTeam;
+                        }
+                        return data;
+                    });
 
                     // First event is always the currentRound event
                     var currentRound = events[0].data.roundId;
@@ -198,7 +203,6 @@ define([
                         }
                     });
                 } else if (content.type === "end") {
-                    console.log("WINNING SITuATION", content);
                     if (content.data[0].data.winner && content.data[0].data.winner.player === playerId) {
                         showNotification("YOU<br>WIN");
                     } else {
