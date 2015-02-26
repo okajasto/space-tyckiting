@@ -7,10 +7,12 @@ function events(actions, world, rules, counter) {
 
 function messages(events) {
     return events.players.map(function(player) {
-        return tools.createMessage(player, {
+        var test = tools.createMessage(player.id, {
             event: "team",
-            data: _.where(events.allPlayers, {player: player}).map(tools.botInfoWithPositionAndHp)
+            data: _.where(events.allBots, {player: player.id}).map(tools.botInfoWithPositionAndHp)
         });
+        console.log("TEST", _.where(events.allBots, {player: player.id}));
+        return test;
     });
 }
 

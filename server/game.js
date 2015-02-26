@@ -8,6 +8,7 @@ var ws = require('ws');
 function Game(config) {
 
     var allPlayers = [];
+    var spectators = [];
     var allBots = [];
     var started = false;
     var finished = false;
@@ -37,16 +38,12 @@ function Game(config) {
         ws.on('connection', function(socket){
 
             var id = idCounter++;
-            var bots = [{id: botIdCounter++, name: id + "_0"}, {id: botIdCounter++, name: id + "_1"}, {id: botIdCounter++, name: id + "_2"}];
-
-            console.log("Bots", bots);
-
-            var player = {id: id, socket: socket, bots: bots};
+            var player = {id: id, socket: socket};
 
             allPlayers.push(player);
 
-            socket.on("close", function(){
-
+            socket.on("close", function() {
+                // TODO implement proper onclose
             });
 
             socket.on("message", function(rawData) {
@@ -60,23 +57,40 @@ function Game(config) {
                     }
                 } else if (data.type === "message") {
 
+                } else if (data.type === "spectate") {
+                    if (player.active) {
+                        if (socket) {
+                            socket.send(JSON.stringify({type: "error", data: "Already in play"}));
+                        }
+                    } else {
+                        spectators.push(player);
+                    }
                 } else if (data.type === "join" ) {
+
                     if (started) {
                         if (socket) {
                             socket.send(JSON.stringify({type: "error", data: "Already started"}));
                         }
                         return;
                     }
-                    // Clear inactive players (players without connection)
+                    // Clear inactive players and spectators (players without connection)
                     allPlayers = _.filter(allPlayers, function(player) {
                         return player.socket.readyState === player.socket.OPEN;
                     });
 
-                    console.log("Content", content);
-
                     player.name = content.name;
-                    // TODO Get bot names
-//                    player.bots = content.bots;
+                    player.bots = _.range(config.bots).map(function(index) {
+                        var name;
+                        if (content.bots && content.bots[index]) {
+                            name = content.bots[index];
+                        } else {
+                            name = id + "_" + index;
+                        }
+                        return {
+                            id: botIdCounter++,
+                            name: name
+                        }
+                    });
                     player.active = true;
 
                     if (Rules.checkForStart(allPlayers)) {
@@ -84,35 +98,37 @@ function Game(config) {
                     }
                 }
             });
-            socket.send(JSON.stringify({type: "connected", data: {id: id, config: config, bots: bots}}));
+            socket.send(JSON.stringify({type: "connected", data: {id: id, config: config}}));
         });
 
         var sendToPlayer = function(player, eventType, data) {
-            player.socket.send(JSON.stringify({type: eventType, data: data}));
+            if (player.socket.readyState === player.socket.OPEN) {
+                player.socket.send(JSON.stringify({type: eventType, data: data}));
+            }
         };
 
         var start = function(players, config) {
             finished = false;
             // Initialize positions and data
-            var bots = [];
-
-            players.forEach(function(player) {
-                for (var i = 0; i < 3; ++i) {
-                    bots.push({
-                        id: player.bots[i].id,
-                        name: player.bots[i].name,
+            var bots = players.reduce(function(memo, player) {
+                return memo.concat(player.bots.map(function(bot) {
+                    return {
+                        id: bot.id,
+                        name: bot.name,
                         player: player.id,
                         hp: config.startHp,
                         pos: {x: rand(config.width), y: rand(config.height)}
-                    });
-                };
+                    }
+                }));
+            }, []);
+
+            var startMessage = Messages.spectatorStartMessage(players, bots, config);
+            spectators.forEach(function(spectator) {
+                sendToPlayer(spectator, "start", startMessage);
             });
 
             players.forEach(function(player) {
-                if (player.socket && player.socket.readyState === player.socket.OPEN) {
-                    console.log("Start Message to ", player.name);
-                    sendToPlayer(player, "start", Messages.startMessage(player, players, bots, config));
-                }
+                sendToPlayer(player, "start", Messages.startMessage(player, players, bots, config));
             });
 
             started = true;
@@ -132,27 +148,23 @@ function Game(config) {
             var actions = [];
 
             if (counter > 0) {
-                // TODO change to map etc. or start using Rx.js
-                players.forEach(function(player) {
-
-                    console.log("PLAYER-ACTIONS: ", player.actions);
-
+                // TODO Consider using Rx.js
+                actions = players.reduce(function(memo, player) {
                     if (player.actions) {
                         player.actions.forEach(function(action) {
-                            var bot = _.where(activeBots, {id: action.id, player: player.id});
+                            var bot = _.findWhere(activeBots, {id: action.id, player: player.id});
                             if (bot) {
                                 // TODO <- clone this
                                 var _action = action;
                                 _action.x = parseInt(_action.x, 10);
                                 _action.y = parseInt(_action.y, 10);
-                                actions.push(_action);
+                                memo.push(_action);
                             }
                         });
                     }
-                });
+                    return memo;
+                }, []);
             }
-
-            console.log("ACTIONS", actions);
 
             var world = {
                 players: players,
@@ -162,14 +174,41 @@ function Game(config) {
 
             var round = loop(counter, actions, world, rules, config);
 
-            players.forEach(function(player) {
-                var messages = _.filter(round.messages, function(message) {
-                    return (message && (message.target === player.id || message.target === "all"));
-                }).map(function(message) {
-                    return message.content;
-                });
+            var messagesByTeam = round.messages.reduce(function(memo, message) {
+                if (message) {
+//                    console.log("Message: ", message.content.event, message.target);
+                    var target = _.isUndefined(message.target) ? "none" : message.target;
+                    if (memo[target]) {
+                        memo[target].push(message.content);
+                    } else {
+                        memo[target] = [message.content];
+                    }
+                }
+                return memo;
+            }, {});
 
-                console.log("SEND to %s %s", player.name, messages);
+            if (spectators.length > 0) {
+                var spectateMessage = {
+                    messages: messagesByTeam,
+                    actions: actions
+                };
+                spectators.forEach(function(spectator) {
+                    sendToPlayer(spectator, "round", spectateMessage);
+                });
+            }
+
+            players.forEach(function(player) {
+                var messages = messagesByTeam[player.id] || [];
+                if (messagesByTeam["all"]) {
+                    messages = messages.concat(messagesByTeam["all"]);
+                }
+                messages.map(function(message) {
+                    if (message) {
+                        return message.content;
+                    } else {
+                        return "";
+                    }
+                });
                 sendToPlayer(player, "events", messages);
             });
 

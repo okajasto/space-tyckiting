@@ -18,7 +18,7 @@ function applyEvents(events, world, rules) {
 function _handleBlast(tanks, radius, directDamage, action) {
     return _.filter(tanks, _.partial(tools.isInside, action, radius)).map(function(tank) {
         return {
-            source: _.where(tanks, {id: action.id}),
+            source: _.findWhere(tanks, {id: action.id}),
             target: tank,
             damage: tools.isDirect(tank.pos, action) ? directDamage : 1
         }

@@ -191,13 +191,6 @@ function isFinished(players, counter, maxCount) {
 }
 
 module.exports = {
-    applyMoveEvents: applyMoveEvents,
-    applyDamages: applyDamages,
-    getNoActions: getNoActions,
-    getMoveEvents: getMoveEvents,
-    getRadarEvents: getRadarEvents,
-    getCannonEvents: getCannonEvents,
-    getSeeingEvents: getSeeingEvents,
     getCurrentGameStatus: getCurrentGameStatus,
     checkForStart: checkForStart,
     isFinished: isFinished
