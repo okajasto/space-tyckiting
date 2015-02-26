@@ -15,10 +15,9 @@ define([
              Ai) {
 
     var BOT_COUNT = 3;
-    var TARGET_URL = 'http://localhost:3000';
+    var TARGET_URL = 'ws://localhost:3000';
 
     var ai = new Ai();
-
 
     createBots(ai, BOT_COUNT);
 
@@ -46,82 +45,94 @@ define([
 
         function createBot(ai, botIndex) {
 
-            var socket = io.connect(TARGET_URL, {'multiplex' : false});
+            var socket = new WebSocket(TARGET_URL);
 
-            socket.on("connected", function(joinMessage) {
+            socket.onopen = function() {
 
-                var config = joinMessage.config;
+                var config;
+                var botId;
+                var botName;
+                var botTeam;
 
-                var botId = joinMessage.id;
-                var botName = ai.botNames[botIndex];
-                var botTeam = ai.teamName;
+                socket.onmessage = function (rawContent) {
 
-                grid = grid || new Grid($map, botTeam, config.width, config.height, config.cannon, config.radar);
+                    var content = JSON.parse(rawContent.data);
 
-                socket.emit("join", {
-                    name: botName,
-                    team: botTeam
-                });
+                    if (content.type === "connected") {
+                        var joinMessage = content.data;
 
-                socket.on("start", function (data) {
+                        config = joinMessage.config;
 
-                    // It set three times, but it really doesn't matter
-                    opponents = data.opponents;
+                        botId = joinMessage.id;
+                        botName = ai.botNames[botIndex];
+                        botTeam = ai.teamName;
 
-                    function action(type, x, y) {
-                        var action = {
-                            type: type,
-                            x: x,
-                            y: y
+                        grid = grid || new Grid($map, botTeam, config.width, config.height, config.cannon, config.radar);
+
+                        socket.send(JSON.stringify({type:"join", data: {
+                            name: botName,
+                            team: botTeam
+                        }}));
+                    } else if (content.type === "start") {
+                        // It set three times, but it really doesn't matter
+                        var opponents = content.data.opponents;
+                        var data = content.data;
+
+                        function action(type, x, y) {
+                            var action = {
+                                type: type,
+                                x: x,
+                                y: y
+                            };
+                            botIdMap[botId].lastAction = action;
+                            socket.send(JSON.stringify({type:"action", data: action}));
+                        }
+
+                        function move(x, y) {
+                            return action("move", x, y);
+                        }
+
+                        function radar(x, y) {
+                            grid.drawRadar(x,y);
+                            return action("radar", x, y);
+                        }
+
+                        function cannon(x, y) {
+                            grid.drawBlast(x,y);
+                            return action("cannon", x, y);
+                        }
+
+                        function message(message) {
+                            socket.send(JSON.stringify({type:"message", data: message}));
+                        }
+
+                        bots[botIndex] = {
+                            id: botId,
+                            name: botName,
+                            x: data.you.x,
+                            y: data.you.y,
+                            hp: config.startHp,
+                            last: {},
+                            dead: false,
+                            move: move,
+                            radar: radar,
+                            cannon: cannon,
+                            message: message
                         };
-                        botIdMap[botId].lastAction = action;
-                        socket.emit("action", action);
-                    }
 
-                    function move(x, y) {
-                        return action("move", x, y);
-                    }
+                        botIdMap[botId] = bots[botIndex];
 
-                    function radar(x, y) {
-                        grid.drawRadar(x,y);
-                        return action("radar", x, y);
-                    }
+                        clearNotifications();
+                        clearMessages();
+                        grid.clear();
+                        ui.reset();
+                        bots[botIndex].bot_class = ui.getBotClass(botIndex);
+                        grid.updatePosition(botId, data.you.x, data.you.y, bots[botIndex].bot_class, false);
 
-                    function cannon(x, y) {
-                        grid.drawBlast(x,y);
-                        return action("cannon", x, y);
-                    }
+                    } else if (content.type === "events") {
 
-                    function message(message) {
-                        socket.emit("message", message);
-                    }
+                        var events = content.data;
 
-                    bots[botIndex] = {
-                        id: botId,
-                        name: botName,
-                        x: data.you.x,
-                        y: data.you.y,
-                        hp: config.startHp,
-                        last: {},
-                        dead: false,
-                        move: move,
-                        radar: radar,
-                        cannon: cannon,
-                        message: message
-                    };
-
-                    botIdMap[botId] = bots[botIndex];
-
-                    socket.removeAllListeners("events");
-
-                    clearNotifications();
-                    clearMessages();
-                    grid.clear();
-                    ui.reset();
-                    bots[botIndex].bot_class = ui.getBotClass(botIndex);
-                    grid.updatePosition(botId, data.you.x, data.you.y, bots[botIndex].bot_class, false);
-
-                    socket.on('events', function(events) {
                         // First event is always the currentRound event
                         var currentRound = events[0].data.roundId;
 
@@ -178,18 +189,15 @@ define([
                                 }
                             });
                         }
-                    });
-
-                    socket.on("end", function(data) {
-                        socket.removeAllListeners("events");
-                        if (data[0].data.winner && data[0].data.winner.team === botTeam) {
+                    } else if (content.type === "end") {
+                        if (content.data[0].data.winner && content.data[0].data.winner.team === botTeam) {
                             showNotification("YOU<br>WIN");
                         } else {
                             showNotification("YOU<br>LOSE");
                         }
-                    });
-                });
-            });
+                    }
+                };
+            };
 
             function clearNotifications() {
                 $map.find('.notification').remove();

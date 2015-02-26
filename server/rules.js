@@ -43,8 +43,6 @@ function getSeeingEvents(players, seeDistance) {
             return result;
         }, []));
     }, []);
-
-
 }
 
 
