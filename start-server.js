@@ -7,7 +7,7 @@ var WebSocketServer = require('ws').Server;
 var game = require('./server/game.js');
 
 var config = {
-    teamPlayers: 3,
+    bots: 3,
     width: 28,
     height: 28,
     move: 2,

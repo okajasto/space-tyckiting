@@ -2,7 +2,8 @@ require.config({
   paths: {
     "jquery": "libs/jquery.min",
     "lodash": "libs/lodash.min",
-    "promise": "libs/bluebird.min"
+    "promise": "libs/bluebird.min",
+    "svg": "libs/svg.min"
   }
 });
 

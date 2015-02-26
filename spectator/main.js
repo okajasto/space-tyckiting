@@ -2,33 +2,21 @@ define([
     'jquery',
     'promise',
     'messageBox',
-    'grid',
+    'svgGrid',
     'ui'],
     function($,
              Promise,
              MessageBox,
-             Grid,
+             SvgGrid,
              Ui) {
 
     var TARGET_URL = 'ws://localhost:3000';
-
-    var $mapArea = $('#mapArea');
-    var $map = $('<div class="map innerBorder"></div>');
-    $mapArea.append($map);
 
     var messageBox = new MessageBox();
 
     var ui = new Ui();
 
     var grid = null;
-
-    var bots = [];
-    var opponents = [];
-    var botIdMap = {};
-
-    var playerId = null;
-
-    var actions = [];
 
     var socket = new WebSocket(TARGET_URL);
 
@@ -45,61 +33,67 @@ define([
 
                 config = joinMessage.config;
 
-                grid = grid || new Grid($map, "", config.width, config.height, config.cannon, config.radar);
+                grid = grid || new SvgGrid('svgGrid', config.width, config.height, config.cannon, config.radar);
 
                 socket.send(JSON.stringify({type:"spectate", data: {}}));
 
             } else if (content.type === "start") {
                 clearNotifications();
                 clearMessages();
-                grid.clear();
+                grid.clearAll();
                 ui.reset();
             } else if (content.type === "round") {
 
                 grid.clear();
 
-                content.data.actions.forEach(function(action) {
-                    if (action.type === "radar") {
-                        grid.drawRadar(action.x, action.y);
-                    } else if (action.type === "cannon") {
-                        grid.drawBlast(action.x, action.y);
-                    }
-                });
+                var actions = content.data.actions.reduce(function(memo, action) {
+                    memo[action.id] = action;
+                    return memo;
+                }, {});
 
-                var count = 0;
-
-                _.forEach(content.data.messages, function(playerEvents, key) {
+                var isFirst = true;
+                _.forEach(content.data.messages, function(playerEvents) {
                     var team = _.findWhere(playerEvents, {event: "team"});
                     if (team) {
-                        console.log("TEAM", team);
                         team.data.forEach(function(bot) {
-                            console.log("Bot", bot);
-                            grid.updatePosition(bot.id, bot.x, bot.y, "bot" + key, bot.hp <= 0);
+                            if (!grid.hasShip(bot.id)) {
+                                grid.addShip(bot.id, bot.x, bot.y, isFirst);
+                            }
+                            if (bot.hp <= 0) {
+                                grid.destroyShip(bot.id);
+                            } else {
+                                grid.moveShip(bot.id, bot.x, bot.y);
+                            }
+
+                            var action = actions[bot.id];
+
+                            if (action) {
+                                if (action.type === "radar") {
+                                    grid.radar(bot.x, bot.y, action.x, action.y);
+                                } else if (action.type === "cannon") {
+                                    grid.blast(bot.x, bot.y, action.x, action.y);
+                                }
+                            }
+
                             if (!ui.hasBot(bot.id)) {
-                                ui.addBot(0, bot, config);
+                                ui.addBot(bot, isFirst, config);
                             } else {
                                 ui.updateBot(bot);
                             }
-                        })
+                        });
+                        isFirst = false;
                     }
                 });
             } else if (content.type === "end") {
-              /*  if (content.data[0].data.winner && content.data[0].data.winner.player === playerId) {
-                    showNotification("YOU<br>WIN");
-                } else {
-                    showNotification("YOU<br>LOSE");
-                } */
+
             }
         };
     };
 
     function clearNotifications() {
-        $map.find('.notification').remove();
     }
 
     function showNotification(message) {
-        $map.find('.notification').remove();
-        $map.append('<div class="notification">' + message + '</div>')
     }
 
     function clearMessages() {

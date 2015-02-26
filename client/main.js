@@ -180,7 +180,7 @@ define([
 
                     ai.makeDecisions(currentRound, events, bots, config, opponents);
 
-                    console.log("Sending", JSON.stringify(actions));
+                    // console.log("Sending", JSON.stringify(actions));
 
                     socket.send(JSON.stringify({type:"actions", data: actions}));
 

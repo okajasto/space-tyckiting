@@ -38,14 +38,12 @@ function Game(config) {
         ws.on('connection', function(socket){
 
             var id = idCounter++;
-            // TODO Send bots only after the join message
-            var bots = [{id: botIdCounter++, name: id + "_0"}, {id: botIdCounter++, name: id + "_1"}, {id: botIdCounter++, name: id + "_2"}];
-            var player = {id: id, socket: socket, bots: bots};
+            var player = {id: id, socket: socket};
 
             allPlayers.push(player);
 
-            socket.on("close", function(){
-                //TODO Handling close message
+            socket.on("close", function() {
+                // TODO implement proper onclose
             });
 
             socket.on("message", function(rawData) {
@@ -68,20 +66,31 @@ function Game(config) {
                         spectators.push(player);
                     }
                 } else if (data.type === "join" ) {
+
                     if (started) {
                         if (socket) {
                             socket.send(JSON.stringify({type: "error", data: "Already started"}));
                         }
                         return;
                     }
-                    // Clear inactive players (players without connection)
+                    // Clear inactive players and spectators (players without connection)
                     allPlayers = _.filter(allPlayers, function(player) {
                         return player.socket.readyState === player.socket.OPEN;
                     });
 
                     player.name = content.name;
-                    // TODO Get bot names
-//                    player.bots =
+                    player.bots = _.range(config.bots).map(function(index) {
+                        var name;
+                        if (content.bots && content.bots[index]) {
+                            name = content.bots[index];
+                        } else {
+                            name = id + "_" + index;
+                        }
+                        return {
+                            id: botIdCounter++,
+                            name: name
+                        }
+                    });
                     player.active = true;
 
                     if (Rules.checkForStart(allPlayers)) {
@@ -89,35 +98,37 @@ function Game(config) {
                     }
                 }
             });
-            socket.send(JSON.stringify({type: "connected", data: {id: id, config: config, bots: bots}}));
+            socket.send(JSON.stringify({type: "connected", data: {id: id, config: config}}));
         });
 
         var sendToPlayer = function(player, eventType, data) {
-            player.socket.send(JSON.stringify({type: eventType, data: data}));
+            if (player.socket.readyState === player.socket.OPEN) {
+                player.socket.send(JSON.stringify({type: eventType, data: data}));
+            }
         };
 
         var start = function(players, config) {
             finished = false;
             // Initialize positions and data
-            var bots = [];
-
-            players.forEach(function(player) {
-                for (var i = 0; i < 3; ++i) {
-                    bots.push({
-                        id: player.bots[i].id,
-                        name: player.bots[i].name,
+            var bots = players.reduce(function(memo, player) {
+                return memo.concat(player.bots.map(function(bot) {
+                    return {
+                        id: bot.id,
+                        name: bot.name,
                         player: player.id,
                         hp: config.startHp,
                         pos: {x: rand(config.width), y: rand(config.height)}
-                    });
-                };
+                    }
+                }));
+            }, []);
+
+            var startMessage = Messages.spectatorStartMessage(players, bots, config);
+            spectators.forEach(function(spectator) {
+                sendToPlayer(spectator, "start", startMessage);
             });
 
             players.forEach(function(player) {
-                if (player.socket && player.socket.readyState === player.socket.OPEN) {
-                    console.log("Start Message to ", player.name);
-                    sendToPlayer(player, "start", Messages.startMessage(player, players, bots, config));
-                }
+                sendToPlayer(player, "start", Messages.startMessage(player, players, bots, config));
             });
 
             started = true;
@@ -137,8 +148,8 @@ function Game(config) {
             var actions = [];
 
             if (counter > 0) {
-                // TODO change to map etc. or start using Rx.js
-                players.forEach(function(player) {
+                // TODO Consider using Rx.js
+                actions = players.reduce(function(memo, player) {
                     if (player.actions) {
                         player.actions.forEach(function(action) {
                             var bot = _.findWhere(activeBots, {id: action.id, player: player.id});
@@ -147,11 +158,12 @@ function Game(config) {
                                 var _action = action;
                                 _action.x = parseInt(_action.x, 10);
                                 _action.y = parseInt(_action.y, 10);
-                                actions.push(_action);
+                                memo.push(_action);
                             }
                         });
                     }
-                });
+                    return memo;
+                }, []);
             }
 
             var world = {

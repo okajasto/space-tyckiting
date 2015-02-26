@@ -19,7 +19,7 @@
     background-color: black;
     box-shadow: inset;
     border-radius: 5px;
-    padding: 4px;
+    padding: 10px;
     margin: 30px;
     box-shadow: -2px -2px 0px #888888;
 }
@@ -107,43 +107,14 @@
     color: #006400;
 }
 
-.bot1 {
+.filled {
     background-color: green;
 }
 
-.bot2 {
-    background-color: cyan;
-}
-
-.bot3 {
-    background-color: magenta;
-}
-
-.bot4 {
-    background-color: green;
-}
-
-.tank {
-    background-color: yellowgreen;
-}
-
-.hit {
-    background-color: red;
-}
-
-.blast {
-    background-color: orange;
-}
-
-.radar {
-    border-color: limegreen;
-    background-color: whitesmoke;
+.bordered {
+    border: 1px solid green;
 }
 
 .destroyed {
-    background-color: grey;
-}
-
-.detect {
-    background-color: white;
+    background-color: #777;
 }

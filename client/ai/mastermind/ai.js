@@ -63,11 +63,7 @@ define(["lodash"], function(_) {
 
             events.forEach(function(event) {
                 if (event.event === "hit") {
-
-                    console.log("HIT HIT HIT", event);
-
                     if (event.data.team === teamName) {
-                        console.log("EVADE!");
                         var maxMove = config.move;
                         var player = players[event.data.id];
                         var x = player.x + maxMove - maxMove * (Math.floor(Math.random()*maxMove));
