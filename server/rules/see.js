@@ -2,10 +2,10 @@ var _ = require('lodash');
 var tools = require('./tools.js');
 
 function events(actions, world, rules) {
-    return _.reduce(world.players, function(total, source) {
-        return total.concat(_.reduce(world.players, function(result, target) {
+    return _.reduce(world.bots, function(total, source) {
+        return total.concat(_.reduce(world.bots, function(result, target) {
             if (tools.inDistance(source.pos, target.pos, rules.see)) {
-                if (source.team !== target.team) {
+                if (source.player !== target.player) {
                     result.push(
                         {
                             source: source,
@@ -25,7 +25,7 @@ function messages(events) {
 }
 
 function getDetectedMessage(event) {
-    return tools.createMessage(event.target.team, {
+    return tools.createMessage(event.target.player, {
         event: "detected",
         data: {
             id: event.target.id
@@ -34,11 +34,11 @@ function getDetectedMessage(event) {
 }
 
 function getRadarMessage(event) {
-    return tools.createMessage(event.source.team, {
+    return tools.createMessage(event.source.player, {
         event: "see",
         data: {
             source: event.target.id,
-            positions: [tools.playerInfoWithPosition(event.target)]
+            positions: [tools.botInfoWithPosition(event.target)]
         }
     });
 }
@@ -46,4 +46,4 @@ function getRadarMessage(event) {
 module.exports = {
     events: events,
     messages: messages
-};ß
+};

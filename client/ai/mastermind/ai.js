@@ -81,6 +81,10 @@ define(["lodash"], function(_) {
                     plannedActions = planForAttack(plannedActions, players, target.x, target.y);
                     lastTarget = {x: target.x, y: target.y};
                 } else if (event.event === "detected") {
+                    console.log("event", event);
+
+                    console.log("->", players[event.data.id]);
+
                     players[event.data.id].message("Should I do something now?");
                 }
             });

@@ -1,4 +1,5 @@
 var _ = require('lodash');
+var tools = require('./rules/tools');
 
 var messageCount = 0;
 
@@ -108,23 +109,29 @@ function endMessage(winner) {
     return message;
 }
 
-function startMessage(player, players, config) {
+function startMessage(player, players, bots, config) {
     var message = {
-        you: _playerInfoWithPosition(player),
+        you: {
+            name: player.name,
+            id: player.id,
+            bots: _.where(bots, {player: player.id}).map(tools.botInfoWithPositionAndHp)
+        },
         config: config
     };
-    message.team = _.reduce(players, function(memo, other) {
-        if (other.id !== player.id && other.team === player.team) {
-            memo.push(_playerInfoWithPosition(other));
-        }
-        return memo;
-    }, []);
-    message.opponents = _.reduce(players, function(memo, other) {
-        if (other.id !== player.id && other.team !== player.team && other.active) {
-            memo.push(_playerInfo(other));
-        }
-        return memo;
-    }, []);
+
+    message.opponents =
+        _.filter(players, function(other) {
+            return other !== player.id
+        }).map(function(opponent) {
+            return {
+                name: opponent.name,
+                id: opponent.id,
+                bots: _.filter(bots, function(bot) {
+                    return bot.player !== player.id
+                }).map(tools.botInfo)
+            }
+        });
+
     return message;
 }
 

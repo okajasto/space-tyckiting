@@ -2,15 +2,18 @@ var _ = require('lodash');
 var tools = require('./tools.js');
 
 function events(actions, world, rules) {
-    return _.flatten(tools.filterPlayersByEventType(actions, "radar").map(_.partial(_handleRadar, world.players, rules.radar)));
+    return _.flatten(tools.filterActionsByType(actions, "radar").map(_.partial(_handleRadar, world.bots, rules.radar)));
 }
 
-function _handleRadar(tanks, radius, action) {
-    return _.filter(tanks, _.partial(tools.isInside, action.action, radius)).reduce(function(memo, tank) {
-        if (tank.team !== action.team) {
+function _handleRadar(bots, radius, action) {
+    return _.filter(bots, _.partial(tools.isInside, action, radius)).reduce(function(memo, bot) {
+
+        var source = _.findWhere(bots, {id: action.id});
+
+        if (source && bot.player !== source.player) {
             memo.push({
-                source: action,
-                target: tank
+                source: source,
+                target: bot
             })
         }
         return memo;
@@ -24,7 +27,7 @@ function messages(events) {
 }
 
 function getDetectedMessage(event) {
-    return tools.createMessage(event.target.team, {
+    return tools.createMessage(event.target.player, {
         event: "detected",
         data: {
             id: event.target.id
@@ -33,11 +36,11 @@ function getDetectedMessage(event) {
 }
 
 function getRadarMessage(event) {
-    return tools.createMessage(event.source.team, {
+    return tools.createMessage(event.source.player, {
         event: "see",
         data: {
             source: event.target.id,
-            positions: [tools.playerInfoWithPosition(event.target)]
+            positions: [tools.botInfoWithPosition(event.target)]
         }
     });
 }
@@ -45,4 +48,4 @@ function getRadarMessage(event) {
 module.exports = {
     events: events,
     messages: messages
-}
+};
