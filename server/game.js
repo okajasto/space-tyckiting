@@ -2,6 +2,7 @@ var Rules = require('./rules.js');
 var Messages = require('./messages.js');
 var ActionLog = require('./actionlog.js');
 var _ = require('lodash');
+var loop = require('./gameloop.js');
 
 function Game(config) {
 
@@ -10,6 +11,18 @@ function Game(config) {
     var finished = false;
 
     var idCounter = 0;
+
+    var rules = [
+        require('./rules/round'),
+        require('./rules/start'),
+        require('./rules/status'),
+        require('./rules/noaction'),
+        require('./rules/move'),
+        require('./rules/cannon'),
+        require('./rules/dead'),
+        require('./rules/radar'),
+        require('./rules/end')
+    ];
 
     function rand(val) {
         return Math.floor(Math.random() * val);
@@ -92,7 +105,8 @@ function Game(config) {
 
         var gameLoop = function(teams, players, counter, statistics) {
 
-            // Actually just mutates the original array
+            console.log("Round ", counter);
+
             var activePlayers = _.filter(players, function(player) {
                 return player.hp > 0 && player.active;
             });
@@ -111,6 +125,63 @@ function Game(config) {
                 });
             }
 
+            var world = {
+                teams: teams,
+                players: activePlayers,
+                allPlayers: players
+            };
+
+            var round = loop(counter, activePlayers, world, rules, config);
+
+            teams.forEach(function(team) {
+                var messages = _.filter(round.messages, function(message) {
+                    return (message && (message.target === team || message.target === "all"));
+                }).map(function(message) {
+                    return message.content;
+                });
+                sendToTeam(team, activePlayers, "events", messages);
+            });
+
+            players.forEach(function(player) {
+                // Clear the previous events
+                player.action = null;
+                player.message = null;
+            });
+
+            if (!round.world.finished) {
+                setTimeout(function () {
+                    gameLoop(teams, players, counter+1, statistics);
+                }, config.loopTime);
+            } else {
+                finished = true;
+                started = false;
+
+                teams.forEach(function(team) {
+                    sendToTeam(team, players, "end", _.filter(round.messages, function(message) {
+                        return message.content.event === "end";
+                    }).map(function(m) {
+                        return m.content.data;
+                    }));
+                });
+            }
+         /*   // Actually just mutates the original array
+            var activePlayers = _.filter(players, function(player) {
+                return player.hp > 0 && player.active;
+            });
+
+            if (counter === 0) {
+                // The round 0 is start round. No actions should be performed before it.
+                activePlayers.forEach(function(player) {
+                    player.action = null;
+                });
+            } else {
+                activePlayers.forEach(function(player) {
+                    if (player.action) {
+                        player.action.x = parseInt(player.action.x, 10);
+                        player.action.y = parseInt(player.action.y, 10);
+                    }
+                });
+            }
             // MOVE
             // TODO Handle error cases
             var moves = Rules.getMoveEvents(activePlayers, config.move, config.width, config.height);
@@ -193,7 +264,7 @@ function Game(config) {
                 setTimeout(function () {
                     gameLoop(teams, players, counter+1, statistics);
                 }, config.loopTime);
-            }
+            } */
         };
     };
 

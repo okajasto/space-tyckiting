@@ -104,7 +104,6 @@ function _handleRadar(tanks, radius, player) {
     }, []);
 }
 
-// TODO Prevent moving out of bounds?
 function _handleMove(moveLength, maxWidth, maxHeight, player) {
     if (_isInside(player.action, moveLength, player)) {
         var x = player.action.x;
